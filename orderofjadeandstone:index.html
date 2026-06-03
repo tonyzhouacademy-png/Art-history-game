@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order of Jade and Stone | 玉与石的秩序</title>
+<style>
+    :root {
+        --bg: #050505;
+        --text: #8c9699;
+        --jade: #7a9e7e;
+        --bronze: #b8860b;
+        --clay: #a67c52;
+        --highlight: #dcdcdc;
+    }
+
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Noto Serif SC", "Times New Roman", serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+        user-select: none;
+    }
+
+    /* 视觉特效层 */
+    .overlay {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 5;
+    }
+    .noise {
+        opacity: 0.05;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .scanlines {
+        background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+        background-size: 100% 4px;
+    }
+
+    #wrap {
+        width: 90%;
+        max-width: 600px;
+        text-align: center;
+        position: relative;
+        z-index: 10;
+    }
+
+    /* SVG 动画 */
+    #stage {
+        width: 160px;
+        height: 160px;
+        margin: 0 auto 30px;
+        filter: drop-shadow(0 0 15px rgba(122,158,126,0.3));
+        transition: transform 1s ease;
+    }
+    #shape {
+        stroke-dasharray: 300;
+        stroke-dashoffset: 300;
+        animation: drawPath 2s forwards ease-in-out;
+    }
+    @keyframes drawPath {
+        to { stroke-dashoffset: 0; }
+    }
+
+    /* 文本区域 */
+    #text-area {
+        min-height: 120px;
+        margin-bottom: 20px;
+        line-height: 1.8;
+        font-size: 1.1rem;
+        opacity: 0;
+        animation: fadeIn 1s 0.5s forwards;
+    }
+    #text-area b { color: var(--highlight); font-weight: normal; border-bottom: 1px solid var(--jade); }
+
+    /* 按钮样式 */
+    .btn-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        opacity: 0;
+        animation: fadeIn 1s 1s forwards;
+    }
+    .btn {
+        padding: 12px;
+        border: 1px solid #222;
+        cursor: pointer;
+        transition: all 0.4s;
+        background: rgba(0,0,0,0.5);
+        font-family: inherit;
+        color: var(--text);
+        text-align: left;
+        position: relative;
+        overflow: hidden;
+    }
+    .btn:hover {
+        border-color: var(--jade);
+        color: var(--jade);
+        padding-left: 20px;
+        background: rgba(122,158,126,0.05);
+    }
+    .btn::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 0;
+        background: var(--jade);
+        transition: 0.3s;
+    }
+    .btn:hover::before { width: 3px; }
+
+    /* 隐藏收集物提示 */
+    .hidden-item {
+        font-size: 0.85rem;
+        color: var(--clay);
+        margin: 15px 0;
+        opacity: 0;
+        animation: fadeIn 0.5s forwards;
+        letter-spacing: 1px;
+    }
+
+    /* 神谕/结局文字 */
+    .oracle {
+        font-size: 0.8rem;
+        color: var(--jade);
+        margin-top: 30px;
+        opacity: 0;
+        letter-spacing: 2px;
+        transition: 1s;
+    }
+
+    /* 启动遮罩 */
+    #start-screen {
+        position: fixed;
+        inset: 0;
+        background: #000;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        z-index: 100;
+        transition: opacity 1s;
+    }
+    #start-screen h1 { font-weight: normal; letter-spacing: 5px; margin-bottom: 10px; }
+    #start-screen p { opacity: 0.5; font-size: 0.9rem; animation: pulse 2s infinite; }
+
+    /* 语言切换开关 */
+    #lang-switch {
+        position: fixed;
+        top: 20px; right: 20px;
+        z-index: 20;
+        cursor: pointer;
+        font-size: 0.8rem;
+        border: 1px solid #333;
+        padding: 5px 10px;
+        opacity: 0.5;
+        transition: 0.3s;
+    }
+    #lang-switch:hover { opacity: 1; border-color: var(--jade); }
+
+    /* 收集物图标 */
+    .inventory {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 20;
+        display: flex;
+        gap: 8px;
+    }
+    .inv-item {
+        width: 24px;
+        height: 24px;
+        opacity: 0.2;
+        transition: 0.3s;
+    }
+    .inv-item.found {
+        opacity: 1;
+        filter: drop-shadow(0 0 5px var(--clay));
+    }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+    @keyframes shimmer {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.7; }
+    }
+</style>
+</head>
+<body>
+
+<!-- 视觉层 -->
+<div class="overlay noise"></div>
+<div class="overlay scanlines"></div>
+
+<!-- 语言切换 -->
+<div id="lang-switch">EN / 中文</div>
+
+<!-- 启动页 -->
+<div id="start-screen">
+    <h1>ORDER OF JADE & STONE</h1>
+    <p id="start-hint">CLICK TO ENTER THE RUINS</p>
+</div>
+
+<!-- 主容器 -->
+<div id="wrap">
+    <svg id="stage" viewBox="0 0 100 100">
+        <path id="shape" d="" fill="none" stroke="#666" stroke-width="1"/>
+    </svg>
+
+    <div id="text-area"></div>
+    <div id="hidden-item" class="hidden-item"></div>
+    <div id="choices" class="btn-container"></div>
+    <div id="oracle" class="oracle"></div>
+</div>
+
+<!-- 收集物图标 -->
+<div class="inventory">
+    <svg id="inv-pottery" class="inv-item" viewBox="0 0 24 24" fill="var(--clay)">
+        <path d="M7 2h10v2H7V2zm1 4h8v2H8V6zm-2 4h12v2H6v-2zm1 4h10v2H7v-2zm2 4h6v2h-6v-2z"/>
+        <ellipse cx="12" cy="18" rx="6" ry="2" fill="none" stroke="var(--clay)" stroke-width="1"/>
+    </svg>
+    <svg id="inv-xun" class="inv-item" viewBox="0 0 24 24" fill="var(--clay)">
+        <ellipse cx="12" cy="14" rx="8" ry="10" fill="none" stroke="var(--clay)" stroke-width="1.5"/>
+        <circle cx="9" cy="12" r="1.5" fill="var(--clay)"/>
+        <circle cx="12" cy="10" r="1.5" fill="var(--clay)"/>
+        <circle cx="15" cy="13" r="1.5" fill="var(--clay)"/>
+        <circle cx="12" cy="16" r="1.5" fill="var(--clay)"/>
+    </svg>
+</div>
+
+<script>
+// -------------------
+// 状态与配置
+// -------------------
+let currentLang = 'en';
+let state = { u:0, a:0, e:0, i:0 };
+let inventory = { pottery: false, xun: false };
+let audioCtx;
+let droneOsc, droneGain;
+let windNoise, windFilter, windGain;
+
+// 多语言资源库
+const I18N = {
+    startHint: { en: "CLICK TO ENTER THE RUINS", zh: "点击进入遗迹" },
+    oracle: {
+        en: "\"Civilization is not an end, but a divergence of interpretation.\"",
+        zh: "“文明不是结束，是解释方式的分裂。”"
+    },
+    hidden: {
+        pottery: {
+            en: "You found a piece of ancient pottery. The clay still bears the imprint of fingers.",
+            zh: "你发现了一片古陶。陶土上仍留有手指的印痕。"
+        },
+        xun: {
+            en: "You found an ocarina (Xun). Six holes, waiting for breath to awaken sound.",
+            zh: "你发现了一只埙。六孔，等待气息唤醒声音。"
+        }
+    },
+    scenes: [
+        {
+            t: { en: "Stones in the river valley.<br>Civilization has not yet appeared, but choices already exist.", zh: "河谷中的石头。<br>文明尚未出现，但选择已经存在。" },
+            v: "stone",
+            c: [
+                { t: { en: "Sharpen (Survival)", zh: "打磨锋利（生存）" }, u:2 },
+                { t: { en: "Symmetry (Form)", zh: "追求对称（形式）" }, e:2 },
+                { t: { en: "Observe Structure (Cognition)", zh: "观察结构（认知）" }, a:1 }
+            ],
+            hidden: { type: 'pottery', chance: 0.4 }
+        },
+        {
+            t: { en: "Fire is controlled.<br>Time is extended for the first time.", zh: "火被控制。<br>时间第一次被延长。" },
+            v: "fire",
+            c: [
+                { t: { en: "Tools (Efficiency)", zh: "制造工具（效率）" }, u:2 },
+                { t: { en: "Rules (Order)", zh: "建立规则（秩序）" }, a:2 },
+                { t: { en: "Record Form (Aesthetics)", zh: "记录形态（审美）" }, e:2 }
+            ]
+        },
+        {
+            t: { en: "Jade appears.<br>The birth of the useless object.", zh: "玉出现。<br>无用之物诞生。" },
+            v: "jade",
+            c: [
+                { t: { en: "Possess (Power)", zh: "占有（权力）" }, a:2 },
+                { t: { en: "Wear (Form)", zh: "佩戴（形式）" }, e:2 },
+                { t: { en: "Reject (Rationality)", zh: "拒绝（理性）" }, u:1 }
+            ],
+            hidden: { type: 'xun', chance: 0.35 }
+        },
+        {
+            t: { en: "Burial system initiated.<br>Objects are sent into the invisible.", zh: "墓葬系统开启。<br>物被送入不可见。" },
+            v: "grave",
+            c: [
+                { t: { en: "Sacrificial Order", zh: "祭祀秩序" }, a:2 },
+                { t: { en: "Symbolic Form", zh: "象征形式" }, e:2 },
+                { t: { en: "Tool Logic", zh: "工具逻辑" }, u:2 }
+            ]
+        },
+        {
+            t: { en: "The ruins are classifying you.", zh: "遗迹正在归类你。" },
+            v: "stone",
+            c: [{ t: { en: "Enter Settlement", zh: "进入结算" }, u:0 }]
+        }
+    ],
+    endings: {
+        form: {
+            title: { en: "Object-Watching Civilization", zh: "观物文明" },
+            desc: { en: "The world is primarily form.", zh: "世界首先是形式。" },
+            next: { en: "Bronze Age: Symbol System", zh: "青铜时代：象征系统" }
+        },
+        order: {
+            title: { en: "Order Civilization", zh: "秩序文明" },
+            desc: { en: "The world is primarily structure.", zh: "世界首先是结构。" },
+            next: { en: "Bronze Age: Ritual System", zh: "青铜时代：礼制系统" }
+        },
+        tool: {
+            title: { en: "Artisan Civilization", zh: "工匠文明" },
+            desc: { en: "The world is primarily tool.", zh: "世界首先是工具。" },
+            next: { en: "Bronze Age: Technical System", zh: "青铜时代：技术系统" }
+        }
+    },
+    bronzeIntro: {
+        en: "Bronze begins to be赋予 different meanings.<br>The world enters the stage of structured civilization.",
+        zh: "青铜开始被赋予不同意义。<br>世界进入结构化文明阶段。"
+    },
+    restart: { en: "Restart Neolithic", zh: "重启新石器" },
+    back: { en: "Return", zh: "返回" }
+};
+
+// -------------------
+// 增强版声场系统
+// -------------------
+function initAudio() {
+    if (audioCtx) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContext();
+
+    // 1. 地层低频 (Deep Drone) - 模拟大地震动
+    droneOsc = audioCtx.createOscillator();
+    droneGain = audioCtx.createGain();
+    droneOsc.type = 'triangle';
+    droneOsc.frequency.value = 38;
+    droneGain.gain.value = 0.025;
+    droneOsc.connect(droneGain).connect(audioCtx.destination);
+    droneOsc.start();
+
+    // 2. 风声 (Wind Noise) - 模拟遗迹空旷感
+    const bufferSize = 2 * audioCtx.sampleRate;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+
+    windNoise = audioCtx.createBufferSource();
+    windNoise.buffer = noiseBuffer;
+    windNoise.loop = true;
+    windFilter = audioCtx.createBiquadFilter();
+    windFilter.type = 'lowpass';
+    windFilter.frequency.value = 180;
+    windGain = audioCtx.createGain();
+    windGain.gain.value = 0.012;
+
+    windNoise.connect(windFilter).connect(windGain).connect(audioCtx.destination);
+    windNoise.start();
+
+    // 3. 随机玉磬声 (Jade Chime)
+    setInterval(() => {
+        if (Math.random() > 0.65) playChime();
+    }, 3500);
+
+    // 4. 随机埙声 (Xun Drone) - 只在发现埙后激活
+    setInterval(() => {
+        if (inventory.xun && Math.random() > 0.7) playXun();
+    }, 5000);
+
+    // 5. 陶器环境声 - 细微的陶土摩擦感
+    setInterval(() => {
+        if (inventory.pottery && Math.random() > 0.75) playPotterySound();
+    }, 4000);
+}
+
+function playChime() {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    const freqs = [523.25, 587.33, 659.25, 783.99, 880.00];
+    osc.frequency.value = freqs[Math.floor(Math.random() * freqs.length)] + (Math.random()*20);
+
+    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.5);
+
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 2.5);
+}
+
+// 埙的独特音色 - 低沉、空灵、带有气息感
+function playXun() {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+
+    // 埙的典型音色：低频率、略带鼻音
+    osc.type = 'sine';
+    const xunFreqs = [261.63, 293.66, 329.63, 349.23, 392.00]; // C4, D4, E4, F4, G4
+    osc.frequency.value = xunFreqs[Math.floor(Math.random() * xunFreqs.length)] - 120; // 降低一个八度
+
+    // 模拟气息吹入的渐强渐弱
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 0.3);
+    gain.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 1);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3);
+
+    // 低通滤波模拟埙的闷音质感
+    filter.type = 'lowpass';
+    filter.frequency.value = 800;
+
+    osc.connect(filter).connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 3);
+}
+
+// 陶器的细微声响 - 类似陶片轻触
+function playPotterySound() {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+
+    osc.type = 'triangle';
+    osc.frequency.value = 400 + Math.random() * 200;
+
+    gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+
+    filter.type = 'bandpass';
+    filter.frequency.value = 600;
+    filter.Q.value = 2;
+
+    osc.connect(filter).connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.8);
+}
+
+// 点击反馈音效
+function playClickSound() {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 800;
+    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
+}
+
+// 发现隐藏物品音效
+function playDiscoverSound() {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 660;
+    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 1.2);
+}
+
+// -------------------
+// 核心逻辑
+// -------------------
+function toggleLang() {
+    currentLang = currentLang === 'en' ? 'zh' : 'en';
+    render();
+}
+
+function getText(obj) {
+    return typeof obj === 'object' ? obj[currentLang] : obj;
+}
+
+function draw(v) {
+    const p = document.getElementById("shape");
+    if (!p) return;
+
+    p.style.animation = 'none';
+    p.offsetHeight;
+    p.style.animation = null;
+
+    let d = "";
+    if(v=="stone") d="M20 80 L40 20 L80 40 L60 80 Z";
+    if(v=="fire") d="M50 10 Q60 40 40 60 Q70 70 50 90 Q30 70 40 50 Z";
+    if(v=="jade") d="M50 20 A30 30 0 1 1 49 20 Z";
+    if(v=="grave") d="M30 30 L70 30 L70 70 L30 70 Z";
+    p.setAttribute("d", d);
+}
+
+function classify() {
+    let {u, a, e} = state;
+    if(e > u && e > a) return I18N.endings.form;
+    if(a > u) return I18N.endings.order;
+    return I18N.endings.tool;
+}
+
+function checkHiddenItem(scene) {
+    if (!scene.hidden || !audioCtx) return;
+
+    const { type, chance } = scene.hidden;
+    if (inventory[type] || Math.random() > chance) return;
+
+    // 发现隐藏物品
+    inventory[type] = true;
+    playDiscoverSound();
+
+    const hiddenEl = document.getElementById('hidden-item');
+    const invEl = document.getElementById(`inv-${type}`);
+
+    if (hiddenEl) {
+        hiddenEl.textContent = getText(I18N.hidden[type]);
+        hiddenEl.style.opacity = 1;
+        setTimeout(() => { hiddenEl.style.opacity = 0; }, 4000);
+    }
+
+    if (invEl) {
+        invEl.classList.add('found');
+    }
+}
+
+function render() {
+    const scene = I18N.scenes[state.i];
+    const textAreaEl = document.getElementById("text-area");
+    const choicesEl = document.getElementById("choices");
+    const oracleEl = document.getElementById("oracle");
+    const hiddenEl = document.getElementById("hidden-item");
+
+    if (!textAreaEl || !choicesEl) return;
+
+    draw(scene.v);
+    textAreaEl.innerHTML = getText(scene.t);
+
+    // 检查隐藏物品
+    checkHiddenItem(scene);
+
+    choicesEl.innerHTML = '';
+
+    if (state.i >= I18N.scenes.length - 1) {
+        // 结算页面
+        const ending = classify();
+        let inventoryText = '';
+        if (inventory.pottery || inventory.xun) {
+            inventoryText = `<br><i style="color:var(--clay)">`;
+            if (inventory.pottery) inventoryText += getText(I18N.hidden.pottery).split('.')[0] + '. ';
+            if (inventory.xun) inventoryText += getText(I18N.hidden.xun).split('.')[0] + '. ';
+            inventoryText += `</i><br>`;
+        }
+
+        textAreaEl.innerHTML = `
+            <b>${getText(ending.title)}</b><br><br>
+            ${getText(ending.desc)}<br>
+            ${inventoryText}
+            ${I18N.scenes[state.i].c[0].t[currentLang]}:<br><br>
+        `;
+
+        const bronzeBtn = document.createElement('button');
+        bronzeBtn.className = 'btn';
+        bronzeBtn.textContent = getText(ending.next);
+        bronzeBtn.addEventListener('click', () => { playClickSound(); bronzeAge(getText(ending.next)); });
+        choicesEl.appendChild(bronzeBtn);
+
+        const restartBtn = document.createElement('button');
+        restartBtn.className = 'btn';
+        restartBtn.textContent = getText(I18N.restart);
+        restartBtn.addEventListener('click', () => { playClickSound(); setTimeout(location.reload.bind(location), 150); });
+        choicesEl.appendChild(restartBtn);
+
+        if (oracleEl) {
+            setTimeout(() => {
+                if (oracleEl) {
+                    oracleEl.style.opacity = 1;
+                    oracleEl.textContent = getText(I18N.oracle);
+                }
+            }, 1000);
+        }
+        return;
+    }
+
+    scene.c.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.textContent = getText(choice.t);
+        btn.addEventListener('click', () => {
+            playClickSound();
+            state.u += choice.u || 0;
+            state.a += choice.a || 0;
+            state.e += choice.e || 0;
+            state.i++;
+            render();
+        });
+        choicesEl.appendChild(btn);
+    });
+}
+
+function bronzeAge(title) {
+    const textAreaEl = document.getElementById("text-area");
+    const choicesEl = document.getElementById("choices");
+    if (!textAreaEl || !choicesEl) return;
+
+    let inventoryNote = '';
+    if (inventory.xun) {
+        inventoryNote = `<br><br><i style="color:var(--clay)">The Xun you found echoes in the bronze chamber...</i>`;
+    }
+
+    textAreaEl.innerHTML = `
+        <b>${title}</b><br><br>
+        ${getText(I18N.bronzeIntro)}<br>
+        ${inventoryNote}
+        <br><i>(Next chapter can be expanded)</i>
+    `;
+
+    choicesEl.innerHTML = '';
+
+    const backBtn = document.createElement('button');
+    backBtn.className = 'btn';
+    backBtn.textContent = getText(I18N.back);
+    backBtn.addEventListener('click', () => { playClickSound(); render(); });
+    choicesEl.appendChild(backBtn);
+}
+
+// -------------------
+// 初始化
+// -------------------
+document.addEventListener('DOMContentLoaded', () => {
+    const startScreen = document.getElementById('start-screen');
+    const langSwitch = document.getElementById('lang-switch');
+    const startHint = document.getElementById('start-hint');
+
+    if (startScreen && langSwitch && startHint) {
+        startScreen.addEventListener('click', () => {
+            startScreen.style.opacity = '0';
+            setTimeout(() => startScreen.remove(), 1000);
+            initAudio();
+            render();
+        });
+
+        langSwitch.addEventListener('click', () => {
+            playClickSound();
+            toggleLang();
+        });
+        startHint.textContent = getText(I18N.startHint);
+    }
+});
+
+</script>
+</body>
+</html>
