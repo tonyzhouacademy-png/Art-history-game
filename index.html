@@ -1,662 +1,1296 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Order of Jade and Stone | 玉与石的秩序</title>
-<style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order of Jade and Stone | 玉与石的秩序</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet">
+  <style>
     :root {
-        --bg: #050505;
-        --text: #8c9699;
-        --jade: #7a9e7e;
-        --bronze: #b8860b;
-        --clay: #a67c52;
-        --highlight: #dcdcdc;
+      --bg: #050505;
+      --text: #8c9699;
+      --jade: #7a9e7e;
+      --bronze: #b8860b;
+      --clay: #a67c52;
+      --highlight: #dcdcdc;
     }
-
+    * { box-sizing: border-box; }
     body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family: "Noto Serif SC", "Times New Roman", serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        overflow: hidden;
-        user-select: none;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Noto Serif SC", "Times New Roman", serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      user-select: none;
     }
 
-    /* 视觉特效层 */
+    /* Visual effects */
     .overlay {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        pointer-events: none;
-        z-index: 5;
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 5;
     }
     .noise {
-        opacity: 0.05;
-        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.05;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
     .scanlines {
-        background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
-        background-size: 100% 4px;
+      background: linear-gradient(to bottom,
+        rgba(255,255,255,0), rgba(255,255,255,0) 50%,
+        rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+      background-size: 100% 4px;
     }
 
+    /* Main container */
     #wrap {
-        width: 90%;
-        max-width: 600px;
-        text-align: center;
-        position: relative;
-        z-index: 10;
+      width: 90%;
+      max-width: 600px;
+      text-align: center;
+      position: relative;
+      z-index: 10;
     }
 
-    /* SVG 动画 */
+    /* SVG Stage */
     #stage {
-        width: 160px;
-        height: 160px;
-        margin: 0 auto 30px;
-        filter: drop-shadow(0 0 15px rgba(122,158,126,0.3));
-        transition: transform 1s ease;
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 30px;
+      filter: drop-shadow(0 0 15px rgba(122,158,126,0.3));
+      transition: transform 1s ease, filter 1s ease;
     }
     #shape {
-        stroke-dasharray: 300;
-        stroke-dashoffset: 300;
-        animation: drawPath 2s forwards ease-in-out;
+      stroke-dasharray: 500;
+      stroke-dashoffset: 500;
+      animation: drawPath 2s forwards ease-in-out;
+      transition: stroke 1s ease, d 0.8s ease;
     }
     @keyframes drawPath {
-        to { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: 0; }
     }
 
-    /* 文本区域 */
+    /* Text area */
     #text-area {
-        min-height: 120px;
-        margin-bottom: 20px;
-        line-height: 1.8;
-        font-size: 1.1rem;
-        opacity: 0;
-        animation: fadeIn 1s 0.5s forwards;
+      min-height: 120px;
+      margin-bottom: 20px;
+      line-height: 1.9;
+      font-size: 1.05rem;
+      opacity: 0;
     }
-    #text-area b { color: var(--highlight); font-weight: normal; border-bottom: 1px solid var(--jade); }
+    #text-area b {
+      color: var(--highlight);
+      font-weight: normal;
+      border-bottom: 1px solid var(--jade);
+    }
+    #text-area i { color: var(--clay); }
 
-    /* 按钮样式 */
+    /* Buttons */
     .btn-container {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        opacity: 0;
-        animation: fadeIn 1s 1s forwards;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      opacity: 0;
     }
     .btn {
-        padding: 12px;
-        border: 1px solid #222;
-        cursor: pointer;
-        transition: all 0.4s;
-        background: rgba(0,0,0,0.5);
-        font-family: inherit;
-        color: var(--text);
-        text-align: left;
-        position: relative;
-        overflow: hidden;
+      padding: 12px 16px;
+      border: 1px solid #222;
+      cursor: pointer;
+      transition: all 0.4s;
+      background: rgba(0,0,0,0.5);
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: var(--text);
+      text-align: left;
+      position: relative;
+      overflow: hidden;
     }
     .btn:hover {
-        border-color: var(--jade);
-        color: var(--jade);
-        padding-left: 20px;
-        background: rgba(122,158,126,0.05);
+      border-color: var(--jade);
+      color: var(--jade);
+      padding-left: 20px;
+      background: rgba(122,158,126,0.05);
     }
     .btn::before {
-        content: '';
-        position: absolute;
-        left: 0; top: 0; bottom: 0;
-        width: 0;
-        background: var(--jade);
-        transition: 0.3s;
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 0;
+      background: var(--jade);
+      transition: 0.3s;
     }
     .btn:hover::before { width: 3px; }
 
-    /* 隐藏收集物提示 */
+    /* Hidden item toast */
     .hidden-item {
-        font-size: 0.85rem;
-        color: var(--clay);
-        margin: 15px 0;
-        opacity: 0;
-        animation: fadeIn 0.5s forwards;
-        letter-spacing: 1px;
+      font-size: 0.82rem;
+      color: var(--clay);
+      margin: 15px 0;
+      opacity: 0;
+      transition: opacity 0.8s;
+      letter-spacing: 1px;
     }
+    .hidden-item.visible { opacity: 1; }
 
-    /* 神谕/结局文字 */
+    /* Oracle */
     .oracle {
-        font-size: 0.8rem;
-        color: var(--jade);
-        margin-top: 30px;
-        opacity: 0;
-        letter-spacing: 2px;
-        transition: 1s;
+      font-size: 0.8rem;
+      color: var(--jade);
+      margin-top: 30px;
+      opacity: 0;
+      letter-spacing: 2px;
+      transition: opacity 1.5s;
     }
+    .oracle.visible { opacity: 0.7; }
 
-    /* 启动遮罩 */
+    /* Start screen */
     #start-screen {
-        position: fixed;
-        inset: 0;
-        background: #000;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        cursor: pointer;
-        z-index: 100;
-        transition: opacity 1s;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 100;
+      transition: opacity 1s;
     }
-    #start-screen h1 { font-weight: normal; letter-spacing: 5px; margin-bottom: 10px; }
-    #start-screen p { opacity: 0.5; font-size: 0.9rem; animation: pulse 2s infinite; }
+    #start-screen h1 {
+      font-weight: 300;
+      letter-spacing: 6px;
+      margin-bottom: 10px;
+      font-size: 1.4rem;
+      color: var(--highlight);
+    }
+    #start-screen .sub {
+      opacity: 0.4;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+    #start-screen p {
+      opacity: 0.4;
+      font-size: 0.8rem;
+      animation: pulse 2s infinite;
+      letter-spacing: 3px;
+      margin-top: 30px;
+    }
 
-    /* 语言切换开关 */
+    /* Language switch */
     #lang-switch {
-        position: fixed;
-        top: 20px; right: 20px;
-        z-index: 20;
-        cursor: pointer;
-        font-size: 0.8rem;
-        border: 1px solid #333;
-        padding: 5px 10px;
-        opacity: 0.5;
-        transition: 0.3s;
+      position: fixed;
+      top: 20px; right: 20px;
+      z-index: 20;
+      cursor: pointer;
+      font-size: 0.75rem;
+      border: 1px solid #333;
+      padding: 5px 10px;
+      opacity: 0.4;
+      transition: 0.3s;
+      letter-spacing: 1px;
     }
     #lang-switch:hover { opacity: 1; border-color: var(--jade); }
 
-    /* 收集物图标 */
+    /* Inventory */
     .inventory {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        z-index: 20;
-        display: flex;
-        gap: 8px;
+      position: fixed;
+      bottom: 20px; left: 20px;
+      z-index: 20;
+      display: flex;
+      gap: 10px;
+      align-items: center;
     }
     .inv-item {
-        width: 24px;
-        height: 24px;
-        opacity: 0.2;
-        transition: 0.3s;
+      width: 26px; height: 26px;
+      opacity: 0.15;
+      transition: opacity 0.5s, filter 0.5s;
     }
     .inv-item.found {
-        opacity: 1;
-        filter: drop-shadow(0 0 5px var(--clay));
+      opacity: 1;
+      filter: drop-shadow(0 0 6px var(--clay));
+    }
+    .inv-label {
+      font-size: 0.65rem;
+      color: var(--clay);
+      opacity: 0;
+      letter-spacing: 1px;
+      position: fixed;
+      bottom: 50px; left: 20px;
+      transition: opacity 0.5s;
+    }
+    .inv-label.visible { opacity: 0.6; }
+
+    /* Ending screen */
+    #ending-screen {
+      display: none;
+      text-align: center;
+      animation: fadeIn 2s forwards;
+    }
+    #ending-screen.show { display: block; }
+    .ending-title {
+      font-size: 1.4rem;
+      color: var(--highlight);
+      letter-spacing: 4px;
+      margin-bottom: 10px;
+      font-weight: 300;
+    }
+    .ending-zh {
+      font-size: 1.8rem;
+      color: var(--jade);
+      letter-spacing: 8px;
+      margin-bottom: 20px;
+    }
+    .ending-desc {
+      font-size: 0.9rem;
+      line-height: 1.8;
+      opacity: 0.7;
+      margin-bottom: 30px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .ending-oracle {
+      font-size: 0.75rem;
+      color: var(--jade);
+      letter-spacing: 2px;
+      opacity: 0.6;
+      margin-bottom: 30px;
+      font-style: italic;
+    }
+    .score-row {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 30px;
+      font-size: 0.72rem;
+      letter-spacing: 1px;
+      opacity: 0.5;
+    }
+    .score-item { text-align: center; }
+    .score-bar {
+      width: 40px; height: 3px;
+      background: #222;
+      margin: 4px auto 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .score-fill {
+      height: 100%;
+      background: var(--jade);
+      transition: width 1.5s ease;
     }
 
-    @keyframes fadeIn { to { opacity: 1; } }
-    @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }
-    @keyframes shimmer {
-        0%, 100% { opacity: 0.3; }
-        50% { opacity: 0.7; }
+    /* Tony Zhou Modal */
+    .tony-modal {
+      position: fixed;
+      top: 15%; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(4, 4, 4, 0.96);
+      border: 1px solid var(--bronze);
+      padding: 28px;
+      border-radius: 2px;
+      z-index: 200;
+      max-width: 500px;
+      width: 88%;
+      font-size: 0.9rem;
+      color: #ccc;
+      box-shadow: 0 0 30px rgba(184,134,11,0.2);
+      display: none;
     }
-</style>
+    .tony-modal.show { display: block; animation: fadeIn 0.5s forwards; }
+    .tony-modal-header {
+      color: var(--bronze);
+      font-size: 0.78rem;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
+      font-style: italic;
+    }
+    .tony-modal p { line-height: 1.9; margin-bottom: 12px; }
+    .tony-modal b { color: var(--highlight); font-weight: normal; border-bottom: 1px solid var(--bronze); }
+    .tony-modal i { color: var(--clay); }
+    .input-area {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+    }
+    .input-area input {
+      flex: 1;
+      padding: 8px 12px;
+      background: #111;
+      border: 1px solid var(--jade);
+      color: var(--highlight);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .input-area input:focus { border-color: var(--bronze); }
+    .input-area button {
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--jade);
+      color: var(--jade);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      transition: 0.3s;
+    }
+    .input-area button:hover { background: rgba(122,158,126,0.15); }
+    .tony-skip {
+      font-size: 0.72rem;
+      color: #444;
+      cursor: pointer;
+      margin-top: 12px;
+      display: block;
+      text-align: right;
+      transition: color 0.3s;
+    }
+    .tony-skip:hover { color: #666; }
+    .tony-feedback {
+      margin-top: 10px;
+      font-size: 0.8rem;
+      min-height: 18px;
+      transition: color 0.3s;
+    }
+    .tony-feedback.correct { color: var(--jade); }
+    .tony-feedback.wrong { color: #8b3a3a; }
+
+    /* Restart button */
+    .restart-btn {
+      padding: 10px 24px;
+      border: 1px solid #333;
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.8rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: 0.4s;
+    }
+    .restart-btn:hover { border-color: var(--jade); color: var(--jade); }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.25; }
+      50% { opacity: 0.6; }
+    }
+    @keyframes shimmer {
+      0%,100% { filter: drop-shadow(0 0 8px rgba(122,158,126,0.2)); }
+      50% { filter: drop-shadow(0 0 20px rgba(122,158,126,0.5)); }
+    }
+    .stage-shimmer { animation: shimmer 3s infinite; }
+  </style>
 </head>
 <body>
 
-<!-- 视觉层 -->
+<!-- Visual effects -->
 <div class="overlay noise"></div>
 <div class="overlay scanlines"></div>
 
-<!-- 语言切换 -->
+<!-- Language toggle -->
 <div id="lang-switch">EN / 中文</div>
 
-<!-- 启动页 -->
+<!-- Start screen -->
 <div id="start-screen">
-    <h1>ORDER OF JADE & STONE</h1>
-    <p id="start-hint">CLICK TO ENTER THE RUINS</p>
+  <h1>ORDER OF JADE &amp; STONE</h1>
+  <div class="sub">玉与石的秩序</div>
+  <p id="start-hint">CLICK TO ENTER THE RUINS</p>
 </div>
 
-<!-- 主容器 -->
+<!-- Main container -->
 <div id="wrap">
+  <div id="main-game">
     <svg id="stage" viewBox="0 0 100 100">
-        <path id="shape" d="" fill="none" stroke="#666" stroke-width="1"/>
+      <path id="shape" d="" fill="none" stroke="#555" stroke-width="1.2" />
     </svg>
-
     <div id="text-area"></div>
     <div id="hidden-item" class="hidden-item"></div>
     <div id="choices" class="btn-container"></div>
     <div id="oracle" class="oracle"></div>
+  </div>
+
+  <div id="ending-screen">
+    <div class="ending-title" id="ending-title"></div>
+    <div class="ending-zh" id="ending-zh"></div>
+    <div class="ending-desc" id="ending-desc"></div>
+    <div class="ending-oracle" id="ending-oracle"></div>
+    <div class="score-row" id="score-row"></div>
+    <div id="inv-note" style="font-size:0.72rem;color:var(--clay);opacity:0.6;margin-bottom:20px;letter-spacing:1px;display:none;"></div>
+    <button class="restart-btn" id="restart-btn"></button>
+  </div>
 </div>
 
-<!-- 收集物图标 -->
+<!-- Inventory icons -->
 <div class="inventory">
-    <svg id="inv-pottery" class="inv-item" viewBox="0 0 24 24" fill="var(--clay)">
-        <path d="M7 2h10v2H7V2zm1 4h8v2H8V6zm-2 4h12v2H6v-2zm1 4h10v2H7v-2zm2 4h6v2h-6v-2z"/>
-        <ellipse cx="12" cy="18" rx="6" ry="2" fill="none" stroke="var(--clay)" stroke-width="1"/>
-    </svg>
-    <svg id="inv-xun" class="inv-item" viewBox="0 0 24 24" fill="var(--clay)">
-        <ellipse cx="12" cy="14" rx="8" ry="10" fill="none" stroke="var(--clay)" stroke-width="1.5"/>
-        <circle cx="9" cy="12" r="1.5" fill="var(--clay)"/>
-        <circle cx="12" cy="10" r="1.5" fill="var(--clay)"/>
-        <circle cx="15" cy="13" r="1.5" fill="var(--clay)"/>
-        <circle cx="12" cy="16" r="1.5" fill="var(--clay)"/>
-    </svg>
+  <!-- Pottery -->
+  <svg id="inv-pottery" class="inv-item" viewBox="0 0 24 24" fill="none">
+    <path d="M8 4h8l1 3H7L8 4z" stroke="var(--clay)" stroke-width="1.2"/>
+    <path d="M7 7c-.5 2-.5 8 0 10h10c.5-2 .5-8 0-10" stroke="var(--clay)" stroke-width="1.2"/>
+    <path d="M9 17q3 2 6 0" stroke="var(--clay)" stroke-width="1.2"/>
+    <path d="M10 10q2 2 4 0" stroke="var(--clay)" stroke-width="0.8"/>
+  </svg>
+  <!-- Xun (ocarina) -->
+  <svg id="inv-xun" class="inv-item" viewBox="0 0 24 24" fill="none">
+    <ellipse cx="12" cy="13" rx="8" ry="7" stroke="var(--clay)" stroke-width="1.2"/>
+    <circle cx="9.5" cy="11.5" r="1.2" fill="var(--clay)"/>
+    <circle cx="12" cy="9.5" r="1.2" fill="var(--clay)"/>
+    <circle cx="14.5" cy="11.5" r="1.2" fill="var(--clay)"/>
+    <circle cx="12" cy="14" r="1.2" fill="var(--clay)"/>
+    <path d="M12 6 Q14 4 16 5" stroke="var(--clay)" stroke-width="0.8"/>
+  </svg>
+  <!-- Bronze shard -->
+  <svg id="inv-shard" class="inv-item" viewBox="0 0 24 24" fill="none">
+    <path d="M12 3 L4 10 L7 14 L3 21 L13 17 L20 20 L17 12 L21 8 Z" stroke="var(--bronze)" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M12 3 L13 9 L17 12" stroke="var(--bronze)" stroke-width="0.6"/>
+    <path d="M7 14 L13 17" stroke="var(--bronze)" stroke-width="0.6"/>
+  </svg>
+</div>
+
+<!-- Tony Zhou Modal -->
+<div id="tony-modal" class="tony-modal">
+  <div class="tony-modal-header" id="tony-header"></div>
+  <p id="tony-text"></p>
+  <div class="input-area">
+    <input type="text" id="tony-input" autocomplete="off" spellcheck="false" />
+    <button id="tony-submit"></button>
+  </div>
+  <div class="tony-feedback" id="tony-feedback"></div>
+  <span class="tony-skip" id="tony-skip"></span>
 </div>
 
 <script>
-// -------------------
-// 状态与配置
-// -------------------
+// ─────────────────────────────────────
+// STATE
+// ─────────────────────────────────────
 let currentLang = 'en';
-let state = { u:0, a:0, e:0, i:0 };
-let inventory = { pottery: false, xun: false };
-let audioCtx;
-let droneOsc, droneGain;
-let windNoise, windFilter, windGain;
+let tonyAnswered = false;
 
-// 多语言资源库
+let state = { u: 0, a: 0, e: 0, i: 0 }; // utility, aesthetic, emotion, intellect
+let inventory = { pottery: false, xun: false, shard: false };
+
+let audioCtx, droneOsc, droneGain, windNoise, windFilter, windGain;
+
+// ─────────────────────────────────────
+// I18N
+// ─────────────────────────────────────
 const I18N = {
-    startHint: { en: "CLICK TO ENTER THE RUINS", zh: "点击进入遗迹" },
-    oracle: {
-        en: "\"Civilization is not an end, but a divergence of interpretation.\"",
-        zh: "“文明不是结束，是解释方式的分裂。”"
+  startHint: { en: 'CLICK TO ENTER THE RUINS', zh: '点击进入遗迹' },
+  oracleText: {
+    en: '"Civilization is not an end, but a divergence of interpretation."',
+    zh: '"文明不是结束，是解释方式的分裂。"'
+  },
+  hidden: {
+    pottery: {
+      en: '◈  You found a fragment of ancient pottery. The clay still holds the warmth of fingers.',
+      zh: '◈  你发现了一片古陶。陶土上仍留有手的温度。'
     },
-    hidden: {
-        pottery: {
-            en: "You found a piece of ancient pottery. The clay still bears the imprint of fingers.",
-            zh: "你发现了一片古陶。陶土上仍留有手指的印痕。"
-        },
-        xun: {
-            en: "You found an ocarina (Xun). Six holes, waiting for breath to awaken sound.",
-            zh: "你发现了一只埙。六孔，等待气息唤醒声音。"
-        }
+    xun: {
+      en: '◈  You uncovered an ocarina (Xun). Six holes, waiting for breath to awaken sound.',
+      zh: '◈  你发现了一只埙。六孔，等待气息唤醒声音。'
     },
-    scenes: [
-        {
-            t: { en: "Stones in the river valley.<br>Civilization has not yet appeared, but choices already exist.", zh: "河谷中的石头。<br>文明尚未出现，但选择已经存在。" },
-            v: "stone",
-            c: [
-                { t: { en: "Sharpen (Survival)", zh: "打磨锋利（生存）" }, u:2 },
-                { t: { en: "Symmetry (Form)", zh: "追求对称（形式）" }, e:2 },
-                { t: { en: "Observe Structure (Cognition)", zh: "观察结构（认知）" }, a:1 }
-            ],
-            hidden: { type: 'pottery', chance: 0.4 }
-        },
-        {
-            t: { en: "Fire is controlled.<br>Time is extended for the first time.", zh: "火被控制。<br>时间第一次被延长。" },
-            v: "fire",
-            c: [
-                { t: { en: "Tools (Efficiency)", zh: "制造工具（效率）" }, u:2 },
-                { t: { en: "Rules (Order)", zh: "建立规则（秩序）" }, a:2 },
-                { t: { en: "Record Form (Aesthetics)", zh: "记录形态（审美）" }, e:2 }
-            ]
-        },
-        {
-            t: { en: "Jade appears.<br>The birth of the useless object.", zh: "玉出现。<br>无用之物诞生。" },
-            v: "jade",
-            c: [
-                { t: { en: "Possess (Power)", zh: "占有（权力）" }, a:2 },
-                { t: { en: "Wear (Form)", zh: "佩戴（形式）" }, e:2 },
-                { t: { en: "Reject (Rationality)", zh: "拒绝（理性）" }, u:1 }
-            ],
-            hidden: { type: 'xun', chance: 0.35 }
-        },
-        {
-            t: { en: "Burial system initiated.<br>Objects are sent into the invisible.", zh: "墓葬系统开启。<br>物被送入不可见。" },
-            v: "grave",
-            c: [
-                { t: { en: "Sacrificial Order", zh: "祭祀秩序" }, a:2 },
-                { t: { en: "Symbolic Form", zh: "象征形式" }, e:2 },
-                { t: { en: "Tool Logic", zh: "工具逻辑" }, u:2 }
-            ]
-        },
-        {
-            t: { en: "The ruins are classifying you.", zh: "遗迹正在归类你。" },
-            v: "stone",
-            c: [{ t: { en: "Enter Settlement", zh: "进入结算" }, u:0 }]
-        }
-    ],
-    endings: {
-        form: {
-            title: { en: "Object-Watching Civilization", zh: "观物文明" },
-            desc: { en: "The world is primarily form.", zh: "世界首先是形式。" },
-            next: { en: "Bronze Age: Symbol System", zh: "青铜时代：象征系统" }
-        },
-        order: {
-            title: { en: "Order Civilization", zh: "秩序文明" },
-            desc: { en: "The world is primarily structure.", zh: "世界首先是结构。" },
-            next: { en: "Bronze Age: Ritual System", zh: "青铜时代：礼制系统" }
-        },
-        tool: {
-            title: { en: "Artisan Civilization", zh: "工匠文明" },
-            desc: { en: "The world is primarily tool.", zh: "世界首先是工具。" },
-            next: { en: "Bronze Age: Technical System", zh: "青铜时代：技术系统" }
-        }
+    shard: {
+      en: '◈  [Hidden] A fragment of ritual bronze. It hums faintly with ancient order.',
+      zh: '◈  [隐藏] 礼器残片。它因古老的秩序而低鸣。'
+    }
+  },
+  tony: {
+    header: { en: '【 Hermit — Tony Zhou 】', zh: '【 隐士 — Tony Zhou 】' },
+    text: {
+      en: 'The bronze vessels are <b>heavy</b>. They are not made for use — they are made for <b>Li</b>.<br><br>Every pattern on their surface is a word. Every silence between the cauldrons\' thunder is a sentence.<br><br><i>Enter the ancient concept that separates civilization from mere survival:</i>',
+      zh: '青铜器很<b>重</b>。它们不是为了使用而铸造——它们是为了<b>礼</b>而铸造。<br><br>器物表面的每一个纹饰都是一个字。鼎沸雷霆之间的每一段寂静都是一句话。<br><br><i>输入那个将文明与单纯生存分开的古代概念：</i>'
     },
-    bronzeIntro: {
-        en: "Bronze begins to be赋予 different meanings.<br>The world enters the stage of structured civilization.",
-        zh: "青铜开始被赋予不同意义。<br>世界进入结构化文明阶段。"
+    placeholder: { en: 'Enter the word...', zh: '输入那个字……' },
+    submit: { en: 'Offer', zh: '奉上' },
+    skip: { en: 'I do not know this word. Let me pass.', zh: '我不知道这个字。让我离开。' },
+    correct: { en: '— The vessels grow still. You have spoken the truth.', zh: '— 重器归于平静。你说出了真相。' },
+    wrong: { en: '— The bronze does not recognize that word.', zh: '— 青铜不认识这个字。' }
+  },
+  endings: {
+    form: {
+      title: { en: 'Object-Watching Civilization', zh: '观物文明' },
+      desc: {
+        en: 'You dwelt longest among forms. The world, for you, is primarily surface — not shallow surface, but the kind that contains depth. You believe civilization reveals itself not in laws or tools, but in the patient act of seeing.',
+        zh: '你在形式中停留最久。对你而言，世界首先是表面——不是浅薄的表面，而是那种蕴含深度的表面。你相信文明不通过法律或工具显现，而通过耐心的观看显现。'
+      }
     },
-    restart: { en: "Restart Neolithic", zh: "重启新石器" },
-    back: { en: "Return", zh: "返回" }
+    order: {
+      title: { en: 'Order Civilization', zh: '秩序文明' },
+      desc: {
+        en: 'You followed the structure beneath the surface. The world, for you, is primarily pattern — the invisible lattice that holds things in place. You believe civilization is order made visible, rule made weight.',
+        zh: '你追随表面之下的结构。对你而言，世界首先是秩序——那个将事物固定在位置上的无形格架。你相信文明是使秩序可见，使规则有重量。'
+      }
+    },
+    tool: {
+      title: { en: 'Artisan Civilization', zh: '工匠文明' },
+      desc: {
+        en: 'You respected what was made by hand. The world, for you, is primarily craft — the knowledge that lives in muscle and fingertip. You believe civilization is the accumulated wisdom of makers.',
+        zh: '你尊重手工制造之物。对你而言，世界首先是工艺——存活在肌肉和指尖中的知识。你相信文明是制造者积累的智慧。'
+      }
+    },
+    collector: {
+      title: { en: 'The Collector', zh: '收藏家' },
+      desc: {
+        en: 'You gathered what others passed by. The pottery, the ocarina, the bronze shard — each one a thread in a larger tapestry. You believe preservation is itself a form of civilization.',
+        zh: '你拾取了他人略过之物。古陶、埙、青铜碎片——每一件都是更大挂毯中的一根线。你相信保存本身就是文明的一种形式。'
+      }
+    },
+    thinker: {
+      title: { en: 'The Thinker', zh: '思考者' },
+      desc: {
+        en: 'You heard what the hermit said and understood it. Li — ritual, propriety, the invisible architecture of relation. You did not just witness civilization. You understood its grammar.',
+        zh: '你听到了隐士所说的话，并理解了它。礼——仪式、礼节、关系的无形结构。你不只是见证了文明，你理解了它的语法。'
+      }
+    },
+    passer: {
+      title: { en: 'The Passerby', zh: '过客' },
+      desc: {
+        en: 'You moved through history without leaving a mark — and without one being left on you. Not every encounter with the past changes us. Sometimes we simply pass through, and the ruins close behind us like water.',
+        zh: '你走过历史，既未留下痕迹，也未被留下痕迹。并非每一次与过去的相遇都会改变我们。有时我们只是路过，废墟像水一样在身后合拢。'
+      }
+    }
+  },
+  restart: { en: '↻  BEGIN AGAIN', zh: '↻  重新开始' }
 };
 
-// -------------------
-// 增强版声场系统
-// -------------------
+// ─────────────────────────────────────
+// SVG SHAPES
+// ─────────────────────────────────────
+const SHAPES = {
+  pottery: "M30,80 Q20,60 25,40 Q30,20 50,15 Q70,20 75,40 Q80,60 70,80 Q60,86 50,86 Q40,86 30,80 Z",
+  xun:     "M20,45 Q18,30 25,22 Q35,14 50,14 Q65,14 75,22 Q82,30 80,45 Q80,60 70,72 Q60,80 50,80 Q40,80 30,72 Q20,60 20,45 Z",
+  ding:    "M30,72 L28,50 L22,42 L78,42 L72,50 L70,72 Z M35,72 L35,80 M65,72 L65,80 M22,42 L22,38 L25,34 L75,34 L78,38 L78,42",
+  jade:    "M50,10 L72,28 L72,62 L50,80 L28,62 L28,28 Z",
+  ruin:    "M15,80 L15,50 L25,50 L25,40 L35,40 L35,50 L45,50 L45,30 L55,30 L55,50 L65,50 L65,45 L75,45 L75,80 Z"
+};
+
+function setShape(key, color = '#666') {
+  const el = document.getElementById('shape');
+  el.setAttribute('d', SHAPES[key] || SHAPES.pottery);
+  el.setAttribute('stroke', color);
+  el.style.strokeDashoffset = '500';
+  // re-trigger animation
+  el.style.animation = 'none';
+  requestAnimationFrame(() => {
+    el.style.animation = 'drawPath 2s forwards ease-in-out';
+  });
+}
+
+// ─────────────────────────────────────
+// AUDIO
+// ─────────────────────────────────────
 function initAudio() {
-    if (audioCtx) return;
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AudioContext();
+  if (audioCtx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  audioCtx = new AC();
 
-    // 1. 地层低频 (Deep Drone) - 模拟大地震动
-    droneOsc = audioCtx.createOscillator();
-    droneGain = audioCtx.createGain();
-    droneOsc.type = 'triangle';
-    droneOsc.frequency.value = 38;
-    droneGain.gain.value = 0.025;
-    droneOsc.connect(droneGain).connect(audioCtx.destination);
-    droneOsc.start();
+  droneOsc = audioCtx.createOscillator();
+  droneGain = audioCtx.createGain();
+  droneOsc.type = 'triangle';
+  droneOsc.frequency.value = 38;
+  droneGain.gain.value = 0.022;
+  droneOsc.connect(droneGain).connect(audioCtx.destination);
+  droneOsc.start();
 
-    // 2. 风声 (Wind Noise) - 模拟遗迹空旷感
-    const bufferSize = 2 * audioCtx.sampleRate;
-    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+  const bufferSize = 2 * audioCtx.sampleRate;
+  const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const out = noiseBuffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) out[i] = Math.random() * 2 - 1;
+  windNoise = audioCtx.createBufferSource();
+  windNoise.buffer = noiseBuffer;
+  windNoise.loop = true;
+  windFilter = audioCtx.createBiquadFilter();
+  windFilter.type = 'lowpass';
+  windFilter.frequency.value = 160;
+  windGain = audioCtx.createGain();
+  windGain.gain.value = 0.010;
+  windNoise.connect(windFilter).connect(windGain).connect(audioCtx.destination);
+  windNoise.start();
 
-    windNoise = audioCtx.createBufferSource();
-    windNoise.buffer = noiseBuffer;
-    windNoise.loop = true;
-    windFilter = audioCtx.createBiquadFilter();
-    windFilter.type = 'lowpass';
-    windFilter.frequency.value = 180;
-    windGain = audioCtx.createGain();
-    windGain.gain.value = 0.012;
-
-    windNoise.connect(windFilter).connect(windGain).connect(audioCtx.destination);
-    windNoise.start();
-
-    // 3. 随机玉磬声 (Jade Chime)
-    setInterval(() => {
-        if (Math.random() > 0.65) playChime();
-    }, 3500);
-
-    // 4. 随机埙声 (Xun Drone) - 只在发现埙后激活
-    setInterval(() => {
-        if (inventory.xun && Math.random() > 0.7) playXun();
-    }, 5000);
-
-    // 5. 陶器环境声 - 细微的陶土摩擦感
-    setInterval(() => {
-        if (inventory.pottery && Math.random() > 0.75) playPotterySound();
-    }, 4000);
+  setInterval(() => { if (Math.random() > 0.6) playChime(); }, 3800);
 }
 
-function playChime() {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    const freqs = [523.25, 587.33, 659.25, 783.99, 880.00];
-    osc.frequency.value = freqs[Math.floor(Math.random() * freqs.length)] + (Math.random()*20);
-
-    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.5);
-
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 2.5);
+function playChime(freq) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq || (660 + Math.random() * 440);
+  gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.8);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 1.8);
 }
 
-// 埙的独特音色 - 低沉、空灵、带有气息感
-function playXun() {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    const filter = audioCtx.createBiquadFilter();
+// ─────────────────────────────────────
+// GAME NODES
+// ─────────────────────────────────────
+const nodes = {
 
-    // 埙的典型音色：低频率、略带鼻音
-    osc.type = 'sine';
-    const xunFreqs = [261.63, 293.66, 329.63, 349.23, 392.00]; // C4, D4, E4, F4, G4
-    osc.frequency.value = xunFreqs[Math.floor(Math.random() * xunFreqs.length)] - 120; // 降低一个八度
+  // ── OPENING ────────────────────────────────────────────────────────────────
+  bronzeAge: {
+    shape: 'ding',
+    shapeColor: '#7a5c28',
+    text: {
+      en: 'The earth breaks open.<br><br>From the pit, three bronze vessels emerge. They are <b>heavier than they should be</b> — heavier than clay, heavier than metal. Their surfaces are covered in patterns you cannot name. Taotie faces stare from the flanks. Thunder spirals coil between them.<br><br>They were buried here deliberately. Something was being preserved. Or hidden.',
+      zh: '大地裂开。<br><br>坑中，三件青铜重器出土。它们<b>比应有的更重</b>——比陶土重，比金属重。表面覆满你叫不出名字的纹饰。饕餮面孔从器壁凝视。雷纹螺旋蜷曲其间。<br><br>它们是被刻意埋在此处的。有些东西被保存下来。或者被藏匿了。'
+    },
+    choices: [
+      {
+        text: { en: 'Study the surface patterns — what do these faces mean?', zh: '研究表面纹饰——这些面孔意味着什么？' },
+        next: 'formPath',
+        effect: () => { state.a++; }
+      },
+      {
+        text: { en: 'Lift one. Feel what it weighs, what it cost to make.', zh: '举起一件。感受它的重量，感受铸造它的代价。' },
+        next: 'toolPath',
+        effect: () => { state.u++; }
+      },
+      {
+        text: { en: 'Who buried these, and what ritual demanded it?', zh: '谁埋下了这些，是何种仪式所要求的？' },
+        next: 'ritualPath',
+        effect: () => { state.i++; }
+      }
+    ]
+  },
 
-    // 模拟气息吹入的渐强渐弱
-    gain.gain.setValueAtTime(0, audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.06, audioCtx.currentTime + 0.3);
-    gain.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 1);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 3);
+  // ── FORM PATH ──────────────────────────────────────────────────────────────
+  formPath: {
+    shape: 'ding',
+    shapeColor: '#6a8070',
+    text: {
+      en: 'You lean close to the largest vessel.<br><br>The taotie mask is not a face — it is a <b>category of terror</b>. Eyes without a body. Power stripped to its most essential visual grammar. Around it: thunder spirals, silk-worm spirals, cloud spirals. Everything is motion arrested mid-coil.<br><br>Someone spent months engraving this. Months of stillness, to carve movement.',
+      zh: '你靠近最大的那件器物。<br><br>饕餮纹不是一张脸——它是<b>恐惧的一个类别</b>。没有躯体的眼睛。权力被剥离至最基本的视觉语法。其周围：雷纹、蚕纹、云纹。所有事物都是在螺旋正中被凝固的运动。<br><br>有人花了数月雕刻这些。数月的静止，以刻下运动。'
+    },
+    choices: [
+      {
+        text: { en: 'Trace the patterns with your fingers.', zh: '用手指描摹这些纹饰。' },
+        next: 'deepForm',
+        effect: () => { state.a++; },
+        hidden: 'pottery'
+      },
+      {
+        text: { en: 'What emotion does this pattern produce in you?', zh: '这些纹饰在你内心唤起了什么情感？' },
+        next: 'emotionPath',
+        effect: () => { state.e++; state.a++; }
+      },
+      {
+        text: { en: 'Pull back. The pattern is a system, not a feeling.', zh: '退后一步。纹饰是一种系统，不是一种感受。' },
+        next: 'formSystem',
+        effect: () => { state.i++; state.a++; }
+      }
+    ]
+  },
 
-    // 低通滤波模拟埙的闷音质感
-    filter.type = 'lowpass';
-    filter.frequency.value = 800;
+  deepForm: {
+    shape: 'pottery',
+    shapeColor: '#a67c52',
+    text: {
+      en: 'Your fingers find the engraving grooves. They are precisely cut — the width of a fingernail, the depth deliberate.<br><br>And then you feel it: <b>a fingerprint</b>, pressed into the clay of the mold before the bronze was poured. Thousands of years old. Still warm, somehow. Still a person.<br><br>The craftsman who made this mold never saw the final bronze. Only their absence remains — the negative space their hands created.',
+      zh: '你的手指触及雕刻的凹槽。切割精准——宽如指甲，深度刻意。<br><br>然后你感觉到了：一枚<b>指纹</b>，在浇铸青铜之前被压入了陶范。已有数千年历史。却不知为何，仍有温度。仍然是一个人。<br><br>制作这个范的工匠从未看见最终的青铜器。只有他们的缺席留存下来——他们双手创造的负空间。'
+    },
+    choices: [
+      {
+        text: { en: 'The absence is the civilization.', zh: '缺席即是文明。' },
+        next: 'excavation',
+        effect: () => { state.a++; state.e++; }
+      },
+      {
+        text: { en: 'Return to the vessel. There is more surface to read.', zh: '回到器物。还有更多表面可以阅读。' },
+        next: 'formPath',
+        effect: () => { state.a++; }
+      }
+    ]
+  },
 
-    osc.connect(filter).connect(gain).connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 3);
+  emotionPath: {
+    shape: 'jade',
+    shapeColor: '#7a9e7e',
+    text: {
+      en: 'The pattern produces something you cannot name cleanly.<br><br>Not fear, exactly. Not awe. Something like <b>recognition</b> — as if a part of you that predates language knows what this face means. The taotie is not a monster. It is the shape power takes when it wants to be visible.<br><br>You are part of the system that made this. So is everyone who has ever looked at it.',
+      zh: '这些纹饰唤起了某种你无法清晰命名的东西。<br><br>不完全是恐惧。不完全是敬畏。更像一种<b>认出</b>——仿佛你身体里某个早于语言的部分知道这张脸的含义。饕餮不是怪物。它是权力想要被看见时所取的形状。<br><br>你是制造了这一切的系统的一部分。每一个曾经凝视过它的人也是。'
+    },
+    choices: [
+      {
+        text: { en: 'Sit with this feeling. Do not name it yet.', zh: '与这种感受同坐。还不要为它命名。' },
+        next: 'excavation',
+        effect: () => { state.e += 2; }
+      },
+      {
+        text: { en: 'Go deeper — who were the rulers who needed this power visible?', zh: '深入追问——那些需要这种权力可见的统治者是谁？' },
+        next: 'ritualPath',
+        effect: () => { state.i++; }
+      }
+    ]
+  },
+
+  formSystem: {
+    shape: 'ding',
+    shapeColor: '#7a9e7e',
+    text: {
+      en: 'You step back and see the vessel whole.<br><br>The pattern is a <b>grammar</b>. Each element has a position, a weight, a relationship to the others. The taotie at center. Thunder spirals as margin. Bands of geometric repeat as baseline. Nothing is random. Nothing is decorative in the sense of merely pleasing — every element <b>does something</b>.<br><br>This is not art. This is a written language, even if we have not decoded all its words.',
+      zh: '你退后一步，看见器物整体。<br><br>纹饰是一种<b>语法</b>。每个元素都有位置、重量、与其他元素的关系。饕餮居中。雷纹为边。几何重复纹带为基线。没有什么是随意的。没有什么是仅仅为了悦目而存在的装饰——每个元素都在<b>发挥作用</b>。<br><br>这不是艺术。这是一种书面语言，即便我们还未解码它的所有词语。'
+    },
+    choices: [
+      {
+        text: { en: 'A language no one alive can read — is it still civilization?', zh: '一种没有活人能阅读的语言——它还是文明吗？' },
+        next: 'ritualPath',
+        effect: () => { state.i++; }
+      },
+      {
+        text: { en: 'The pattern persists. That is enough.', zh: '纹饰持续存在。这已足够。' },
+        next: 'excavation',
+        effect: () => { state.a++; }
+      }
+    ]
+  },
+
+  // ── TOOL PATH ──────────────────────────────────────────────────────────────
+  toolPath: {
+    shape: 'ding',
+    shapeColor: '#8c7a3e',
+    text: {
+      en: 'You try to lift the ding.<br><br>It does not move.<br><br>Not because it is too heavy for your body — but because <b>it was never meant to be lifted</b>. The legs are decorative. The handles are too narrow for practical grip. This vessel was cast to be seen in place, by people standing at a distance, in firelight.<br><br>The weight is a statement. <i>We can afford to make something this heavy that does nothing practical.</i>',
+      zh: '你试图举起那口鼎。<br><br>它没有动。<br><br>不是因为它对你的身体来说太重——而是因为<b>它从来不是为了被举起而铸造的</b>。足是装饰性的。耳对实际握持来说太窄。这件器物是为了被远处的人在火光中凝视而铸造的，就那样待在原处。<br><br>重量本身是一种声明。<i>我们有能力制造如此沉重却毫无实用价值的东西。</i>'
+    },
+    choices: [
+      {
+        text: { en: 'Uselessness as power — I understand this.', zh: '无用作为权力——我明白了。' },
+        next: 'powerPath',
+        effect: () => { state.u++; state.i++; }
+      },
+      {
+        text: { en: 'Find something that was actually used.', zh: '寻找真正被使用过的器物。' },
+        next: 'craftPath',
+        effect: () => { state.u++; },
+        hidden: 'xun'
+      },
+      {
+        text: { en: 'Return and look more carefully at the burial context.', zh: '返回，更仔细地审视埋藏的情境。' },
+        next: 'bronzeAge',
+        effect: () => {}
+      }
+    ]
+  },
+
+  craftPath: {
+    shape: 'pottery',
+    shapeColor: '#a67c52',
+    text: {
+      en: 'Set apart from the ritual bronzes, you find ordinary objects.<br><br>A ceramic cup, still holding traces of grain. A bone tool, worn at the tip. A small clay ocarina — <b>six holes</b>, cracked at the rim, musical once.<br><br>These things were <i>used</i>. Held every day. Passed between hands. Dropped and repaired. Their surfaces show no taotie, no thunder-spiral grammar — just <b>the smooth patina of use</b>, which is its own kind of beauty.',
+      zh: '在仪式性青铜器旁，你发现了日常器物。<br><br>一只陶杯，仍留有谷物的痕迹。一件骨器，尖端磨损。一只小陶埙——<b>六孔</b>，口沿开裂，曾经能发出音乐。<br><br>这些东西是被<i>使用</i>过的。每天被握持。在手与手之间传递。被摔落，被修补。它们的表面没有饕餮纹，没有雷纹语法——只有<b>使用磨出的光泽</b>，那是另一种美。'
+    },
+    choices: [
+      {
+        text: { en: 'The ordinary is the true record of civilization.', zh: '日常才是文明真正的档案。' },
+        next: 'finalQuestion',
+        effect: () => { state.u += 2; }
+      },
+      {
+        text: { en: 'But who made the ritual objects? Were they the same hands?', zh: '但是谁制造了那些仪式器物？是同一双手吗？' },
+        next: 'ritualPath',
+        effect: () => { state.i++; }
+      }
+    ]
+  },
+
+  powerPath: {
+    shape: 'ding',
+    shapeColor: '#8c7a3e',
+    text: {
+      en: 'You understand now: the Bronze Age is not about bronze.<br><br>Bronze was rare. Smelting required specialized knowledge, organized labor, access to ore. Every bronze vessel is a <b>proof of state</b> — evidence that someone commanded enough people, enough resources, enough time to produce this object that does nothing practical.<br><br>The vessel is not a container. <b>The vessel is a threat.</b><br><br>And the threat worked. For a thousand years.',
+      zh: '你现在理解了：青铜时代不是关于青铜的。<br><br>青铜稀有。冶炼需要专业知识、组织化的劳动、矿石的获取渠道。每一件青铜器都是<b>国家的证明</b>——证明某人掌控了足够多的人、足够多的资源、足够多的时间，以生产这件毫无实用价值的器物。<br><br>这件器物不是容器。<b>这件器物是威胁。</b><br><br>这个威胁有效。持续了一千年。'
+    },
+    choices: [
+      {
+        text: { en: 'A civilization built on demonstrated capacity — this is honest.', zh: '一个建立在展示能力上的文明——这是诚实的。' },
+        next: 'finalQuestion',
+        effect: () => { state.i += 2; }
+      },
+      {
+        text: { en: 'Threat alone is not civilization. There must be something else.', zh: '单凭威胁不是文明。必定还有别的东西。' },
+        next: 'ritualPath',
+        effect: () => { state.i++; }
+      }
+    ]
+  },
+
+  // ── RITUAL PATH ────────────────────────────────────────────────────────────
+  ritualPath: {
+    shape: 'jade',
+    shapeColor: '#7a9e7e',
+    text: {
+      en: 'You circle the vessels slowly.<br><br>They are arranged. Not randomly buried — <b>placed in relationship to each other</b>. The largest at north. Two smaller flanking south. A triangle completed by absence: the fourth position is empty, but the earth there is compressed differently, as if something once stood there and was deliberately removed.<br><br>Someone came back. Someone took something away. Why?',
+      zh: '你缓慢地绕行这些器物。<br><br>它们是被排列的。不是随意埋下——而是<b>被安置在彼此的关系之中</b>。最大的在北。两件较小的在南侧翼。一个由缺席完成的三角形：第四个位置是空的，但那里的土地被压出了不同的形状，仿佛曾经有某物立于此处，后来被刻意移走。<br><br>有人回来过。有人带走了某样东西。为什么？'
+    },
+    choices: [
+      {
+        text: { en: 'Seek the old hermit who lives in the ruins. He knows.', zh: '寻找住在废墟中的老隐士。他知道。' },
+        next: 'tonyEncounter',
+        effect: () => { state.i++; }
+      },
+      {
+        text: { en: 'Excavate the empty fourth position.', zh: '发掘空置的第四个位置。' },
+        next: 'bronzeShrine',
+        effect: () => { state.i++; },
+        hidden: 'shard'
+      },
+      {
+        text: { en: 'Meditate here. Let the arrangement speak.', zh: '在此冥想。让排列自行言说。' },
+        next: 'silentPath',
+        effect: () => { state.i++; state.e++; }
+      }
+    ]
+  },
+
+  bronzeShrine: {
+    shape: 'ruin',
+    shapeColor: '#8c9699',
+    text: {
+      en: 'In the compressed earth of the fourth position, you find it:<br><br>A <b>fragment</b> of a fourth vessel. The handle only, broken at the base. The taotie pattern on it is different from the others — cruder, earlier, or perhaps made by a different workshop entirely.<br><br>This vessel was not buried with the others. It was <b>removed</b>. Then someone returned and left this fragment as a marker — or a record. Of what? Of the removal? Of what was taken?<br><br>History is full of deliberate absences.',
+      zh: '在第四个位置的压实土层中，你找到了它：<br><br>第四件器物的一块<b>碎片</b>。只有耳，从底部断裂。上面的饕餮纹与其他器物不同——更粗糙，更早期，或许完全出自不同的作坊。<br><br>这件器物并非与其他器物一同埋下。它是被<b>移走</b>的。后来有人返回，留下这块碎片作为标记——或者记录。记录什么？移走的行为？被带走的东西？<br><br>历史充满了刻意的缺席。'
+    },
+    choices: [
+      {
+        text: { en: 'The removal matters more than what was removed.', zh: '移走的行为比被移走的东西更重要。' },
+        next: 'ritualDeep',
+        effect: () => { state.i++; }
+      },
+      {
+        text: { en: 'Seek the hermit. He will know what stood here.', zh: '去找隐士。他会知道这里曾立着什么。' },
+        next: 'tonyEncounter',
+        effect: () => { state.i++; }
+      }
+    ]
+  },
+
+  ritualDeep: {
+    shape: 'jade',
+    shapeColor: '#7a9e7e',
+    text: {
+      en: 'The arrangement of absences is itself a text.<br><br>Four vessels — three present, one deliberately removed — arranged in a pattern that only makes sense if you already know the system. This is not a display. This is a <b>message to initiates</b>. Only someone who understands the grammar of the arrangement can read the message of the missing piece.<br><br>Civilization, at its deepest, is a set of things you do not need to explain to those who belong — and cannot explain to those who do not.',
+      zh: '缺席的排列本身就是一种文本。<br><br>四件器物——三件在场，一件被刻意移走——排列成一种只有你已知晓这套系统才能理解的图式。这不是展示。这是<b>写给内部人的信息</b>。只有理解排列语法的人才能解读缺失部分的含义。<br><br>文明在最深处是：那些不需要向同属者解释、也无法向局外者解释的事物。'
+    },
+    choices: [
+      {
+        text: { en: 'I want to be an initiate. I want to read this.', zh: '我想成为内部人。我想阅读这些。' },
+        next: 'tonyEncounter',
+        effect: () => { state.i += 2; }
+      },
+      {
+        text: { en: 'Exclusion built into the foundation — this is civilization\'s shadow.', zh: '排斥建立在根基中——这是文明的阴影。' },
+        next: 'finalQuestion',
+        effect: () => { state.i++; }
+      }
+    ]
+  },
+
+  silentPath: {
+    shape: 'jade',
+    shapeColor: '#7a9e7e',
+    text: {
+      en: 'You sit among the vessels. The wind moves through the excavation trench.<br><br>Nothing happens for a long time.<br><br>Then, slowly, you begin to understand the <b>silence between the objects</b> — the negative space, the gaps deliberately preserved by their arrangement. The vessels do not speak to each other across the gaps. <i>The gaps are the speech.</i><br><br>Some civilizations communicate through what they refuse to say.',
+      zh: '你坐在器物之间。风穿过发掘沟。<br><br>很长一段时间什么都没有发生。<br><br>然后，慢慢地，你开始理解<b>器物之间的沉默</b>——那些负空间，那些被排列刻意保留的间隙。器物们并不跨越间隙彼此言说。<i>间隙本身就是言说。</i><br><br>有些文明通过它们拒绝言说的事物进行交流。'
+    },
+    choices: [
+      {
+        text: { en: 'Stay longer. There is more in the silence.', zh: '再待一会儿。沉默中还有更多。' },
+        next: 'tonyEncounter',
+        effect: () => { state.i += 2; state.e++; }
+      },
+      {
+        text: { en: 'The silence is enough. I have heard what I needed.', zh: '沉默已经足够。我听到了我需要的。' },
+        next: 'finalQuestion',
+        effect: () => { state.i++; state.e += 2; }
+      }
+    ]
+  },
+
+  // ── EXCAVATION / DEEP ──────────────────────────────────────────────────────
+  excavation: {
+    shape: 'ruin',
+    shapeColor: '#8c9699',
+    oracle: true,
+    text: {
+      en: 'You look at the site from above — the trenches, the numbered tags, the plastic sheeting over exposed sections.<br><br>Archaeology is the study of <b>what did not decay</b>. The organic material is gone: the cloth, the wood, the food, the music, the words, the faces. What remains is what was hard enough to outlast its context.<br><br>Bronze outlasts. Jade outlasts. Stone outlasts.<br><br>We are building a civilization from its least perishable fragments, and calling it history.',
+      zh: '你从上方俯视整个遗址——探方、编号标签、覆盖在暴露区段上的塑料布。<br><br>考古学是对<b>未腐朽之物</b>的研究。有机物已消失：布帛、木材、食物、音乐、语言、面孔。留下来的是足够坚硬、能够比其语境更长久存在的东西。<br><br>青铜历久弥坚。玉历久弥坚。石历久弥坚。<br><br>我们正在从最不易腐朽的碎片中重建一个文明，然后称之为历史。'
+    },
+    choices: [
+      {
+        text: { en: 'What we call civilization is a survivor\'s bias in stone.', zh: '我们所称的文明是石头的幸存者偏差。' },
+        next: 'finalQuestion',
+        effect: () => { state.a++; state.i++; }
+      },
+      {
+        text: { en: 'Perhaps the perishable things were the heart of it.', zh: '也许那些易腐朽的才是它的核心。' },
+        next: 'craftPath',
+        effect: () => { state.e++; }
+      }
+    ]
+  },
+
+  // ── TONY ZHOU ──────────────────────────────────────────────────────────────
+  tonyEncounter: {
+    shape: 'ruin',
+    shapeColor: '#b8860b',
+    text: {
+      en: 'At the edge of the excavation site, a man sits on an upturned crate. He is wearing a field jacket that looks thirty years old. He is looking at you as if he expected you eventually.<br><br><b>"You\'ve been reading the surface,"</b> he says. Not a question.<br><br>"There is a word," he continues, "that explains why these vessels weigh more than they should. It is not bronze that makes them heavy."<br><br>He waits.',
+      zh: '在发掘现场的边缘，一个男人坐在一个翻转的木箱上。他穿着一件看起来有三十年历史的田野夹克。他看向你，仿佛早就料到你终究会来。<br><br><b>"你一直在阅读表面，"</b>他说。不是一个问题。<br><br>"有一个字，"他继续说，"能解释为什么这些重器比它们应有的更重。使它们沉重的不是青铜。"<br><br>他等待着。'
+    },
+    choices: [
+      {
+        text: { en: 'Ask him to tell you the word.', zh: '请他告诉你那个字。' },
+        next: '__tony_modal__',
+        effect: () => {}
+      },
+      {
+        text: { en: 'You already suspect you know. Approach the modal.', zh: '你已经怀疑自己知道。接近那个问题。' },
+        next: '__tony_modal__',
+        effect: () => {}
+      }
+    ]
+  },
+
+  tonyRight: {
+    shape: 'jade',
+    shapeColor: '#7a9e7e',
+    oracle: true,
+    text: {
+      en: 'The man nods, once, slowly.<br><br><b>Li</b> — ritual, propriety, the invisible architecture that tells each person where to stand, how to hold their body, which vessels to use, which silences to observe. Not law. Not force. <b>Form internalized until it becomes nature.</b><br><br>"The bronze is heavy," he says, "because every person who made it, who fired it, who carried it here, who buried it — they all knew exactly what it was for. That consensus is what you feel as weight."<br><br>He stands, picks up his bag, and walks toward the road without turning back.',
+      zh: '那个男人慢慢点了一次头。<br><br><b>礼</b>——仪式、礼节、那个无形的结构，告诉每个人应该站在哪里，如何保持身姿，使用哪些器物，遵守哪些沉默。不是法律。不是武力。<b>被内化为天性的形式。</b><br><br>"青铜之所以沉重，"他说，"是因为制造它的每一个人，烧制它的，将它运到这里的，将它埋葬的——他们都清楚地知道它是为了什么。那种共识就是你感受到的重量。"<br><br>他站起身，拿起包，头也不回地走向道路。'
+    },
+    choices: [
+      {
+        text: { en: 'Follow the weight to its conclusion.', zh: '追随重量至其终点。' },
+        next: 'finalQuestion',
+        effect: () => { state.i += 2; }
+      }
+    ]
+  },
+
+  tonyWrong: {
+    shape: 'ruin',
+    shapeColor: '#666',
+    text: {
+      en: 'The man watches you carefully. His expression does not change.<br><br>"You are close," he says. "Or perhaps you are not close at all. It is difficult to tell from the outside of a word."<br><br>He picks up a small stone from the ground and holds it up between two fingers.<br><br>"The vessels are heavy because of what the people around them agreed they meant. Not the metal. Not the craft. The <b>agreement</b>."<br><br>He sets the stone down gently and does not look at you again.',
+      zh: '那个男人仔细地看着你。他的表情没有变化。<br><br>"你接近了，"他说。"或者也许你根本没有接近。从一个字的外部很难判断。"<br><br>他从地上捡起一块小石头，用两根手指夹起来举起。<br><br>"重器沉重，是因为环绕它们的人们同意它们意味着什么。不是金属。不是工艺。是<b>那种共识</b>。"<br><br>他轻轻放下石头，不再看你。'
+    },
+    choices: [
+      {
+        text: { en: 'Try again — you almost had it.', zh: '再试一次——你几乎到了。' },
+        next: '__tony_modal__',
+        effect: () => {}
+      },
+      {
+        text: { en: 'Leave. The word will come later, or not at all.', zh: '离开。那个字会在之后到来，或者永远不会。' },
+        next: 'finalQuestion',
+        effect: () => {}
+      }
+    ]
+  },
+
+  // ── FINAL QUESTION ─────────────────────────────────────────────────────────
+  finalQuestion: {
+    shape: 'jade',
+    shapeColor: '#7a9e7e',
+    oracle: true,
+    text: {
+      en: 'The sun has moved.<br><br>You have been here longer than you planned. The excavation site is quieter now — the other researchers have left for the day, and the only sounds are wind and, occasionally, a distant metal sound you cannot place.<br><br>You look at the three vessels still in their pit, still arranged in their ancient relationship, and you try to formulate what you actually believe about what made these people <b>a civilization</b> rather than simply a population.',
+      zh: '太阳已经移动了位置。<br><br>你在这里待的时间比计划的更久。发掘现场现在更安静了——其他研究人员已经离开了，唯一的声音是风声，以及偶尔传来的、你无法辨认来源的遥远金属声。<br><br>你看着仍在坑中的三件器物，仍保持着它们古老的关系排列，你试图说清楚你真正相信是什么使这些人<b>成为了一种文明</b>，而不仅仅是一个族群。'
+    },
+    choices: [
+      {
+        text: { en: 'Civilization is the agreement to make beautiful things together.', zh: '文明是共同制作美丽之物的协议。' },
+        next: '__ending__',
+        endingKey: 'form',
+        effect: () => { state.a += 2; }
+      },
+      {
+        text: { en: 'Civilization is structured obligation — ritual that holds people in relation.', zh: '文明是结构性义务——将人们维系在关系之中的礼。' },
+        next: '__ending__',
+        endingKey: 'order',
+        effect: () => { state.i += 2; }
+      },
+      {
+        text: { en: 'Civilization is accumulated craft knowledge — the wisdom in the hands.', zh: '文明是积累的工艺知识——存在于双手中的智慧。' },
+        next: '__ending__',
+        endingKey: 'tool',
+        effect: () => { state.u += 2; }
+      }
+    ]
+  }
+};
+
+// ─────────────────────────────────────
+// ENDING CALCULATION
+// ─────────────────────────────────────
+function calcEnding(forcedKey) {
+  // Achievements always override explicit choice
+  if (tonyAnswered) return 'thinker';
+  if (inventory.pottery && inventory.xun && inventory.shard) return 'collector';
+  // Explicit choice from finalQuestion
+  if (forcedKey) return forcedKey;
+  // Score-based fallback
+  const scores = { a: state.a, i: state.i, u: state.u };
+  const top = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
+  if (top[1] === 0) return 'passer';
+  return { a: 'form', i: 'order', u: 'tool' }[top[0]];
 }
 
-// 陶器的细微声响 - 类似陶片轻触
-function playPotterySound() {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    const filter = audioCtx.createBiquadFilter();
+function showEnding(key) {
+  const ending = I18N.endings[key];
+  const mainGame = document.getElementById('main-game');
+  const endScreen = document.getElementById('ending-screen');
 
-    osc.type = 'triangle';
-    osc.frequency.value = 400 + Math.random() * 200;
+  mainGame.style.opacity = '0';
+  mainGame.style.transition = 'opacity 1.5s';
 
-    gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+  setTimeout(() => {
+    mainGame.style.display = 'none';
+    endScreen.classList.add('show');
 
-    filter.type = 'bandpass';
-    filter.frequency.value = 600;
-    filter.Q.value = 2;
+    document.getElementById('ending-title').textContent = ending.title[currentLang];
+    document.getElementById('ending-zh').textContent = ending.title.zh;
+    document.getElementById('ending-desc').textContent = ending.desc[currentLang];
+    document.getElementById('ending-oracle').textContent = I18N.oracleText[currentLang];
 
-    osc.connect(filter).connect(gain).connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.8);
-}
+    // Score bars
+    const maxScore = Math.max(state.a, state.i, state.u, state.e, 1);
+    const scoreRow = document.getElementById('score-row');
+    const labels = {
+      a: { en: 'FORM', zh: '形' },
+      i: { en: 'ORDER', zh: '礼' },
+      u: { en: 'CRAFT', zh: '工' },
+      e: { en: 'FEELING', zh: '情' }
+    };
+    scoreRow.innerHTML = Object.entries(labels).map(([k, label]) => `
+      <div class="score-item">
+        <div>${label[currentLang]}</div>
+        <div class="score-bar">
+          <div class="score-fill" style="width:${Math.round((state[k] / maxScore) * 100)}%"></div>
+        </div>
+      </div>
+    `).join('');
 
-// 点击反馈音效
-function playClickSound() {
-    if (!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = 800;
-    gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.1);
-}
+    document.getElementById('restart-btn').textContent = I18N.restart[currentLang];
 
-// 发现隐藏物品音效
-function playDiscoverSound() {
-    if (!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = 660;
-    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 1.2);
-}
-
-// -------------------
-// 核心逻辑
-// -------------------
-function toggleLang() {
-    currentLang = currentLang === 'en' ? 'zh' : 'en';
-    render();
-}
-
-function getText(obj) {
-    return typeof obj === 'object' ? obj[currentLang] : obj;
-}
-
-function draw(v) {
-    const p = document.getElementById("shape");
-    if (!p) return;
-
-    p.style.animation = 'none';
-    p.offsetHeight;
-    p.style.animation = null;
-
-    let d = "";
-    if(v=="stone") d="M20 80 L40 20 L80 40 L60 80 Z";
-    if(v=="fire") d="M50 10 Q60 40 40 60 Q70 70 50 90 Q30 70 40 50 Z";
-    if(v=="jade") d="M50 20 A30 30 0 1 1 49 20 Z";
-    if(v=="grave") d="M30 30 L70 30 L70 70 L30 70 Z";
-    p.setAttribute("d", d);
-}
-
-function classify() {
-    let {u, a, e} = state;
-    if(e > u && e > a) return I18N.endings.form;
-    if(a > u) return I18N.endings.order;
-    return I18N.endings.tool;
-}
-
-function checkHiddenItem(scene) {
-    if (!scene.hidden || !audioCtx) return;
-
-    const { type, chance } = scene.hidden;
-    if (inventory[type] || Math.random() > chance) return;
-
-    // 发现隐藏物品
-    inventory[type] = true;
-    playDiscoverSound();
-
-    const hiddenEl = document.getElementById('hidden-item');
-    const invEl = document.getElementById(`inv-${type}`);
-
-    if (hiddenEl) {
-        hiddenEl.textContent = getText(I18N.hidden[type]);
-        hiddenEl.style.opacity = 1;
-        setTimeout(() => { hiddenEl.style.opacity = 0; }, 4000);
+    // Inventory summary
+    const found = Object.values(inventory).filter(Boolean).length;
+    const invNote = document.getElementById('inv-note');
+    if (found > 0) {
+      invNote.textContent = currentLang === 'en' ? `Objects found: ${found}/3` : `发现器物：${found}/3`;
+      invNote.style.display = 'block';
+    } else {
+      invNote.style.display = 'none';
     }
 
-    if (invEl) {
-        invEl.classList.add('found');
-    }
+    playChime(440);
+    setTimeout(() => playChime(550), 400);
+    setTimeout(() => playChime(660), 800);
+  }, 1500);
 }
 
-function render() {
-    const scene = I18N.scenes[state.i];
-    const textAreaEl = document.getElementById("text-area");
-    const choicesEl = document.getElementById("choices");
-    const oracleEl = document.getElementById("oracle");
-    const hiddenEl = document.getElementById("hidden-item");
+// ─────────────────────────────────────
+// RENDER NODE
+// ─────────────────────────────────────
+function refreshEl(id, delayMs) {
+  const el = document.getElementById(id);
+  el.style.transition = 'none';
+  el.style.opacity = '0';
+  void el.offsetWidth;
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.9s ease';
+    el.style.opacity = '1';
+  }, delayMs);
+}
 
-    if (!textAreaEl || !choicesEl) return;
+function renderNode(nodeKey) {
+  window.currentNodeKey = nodeKey;
 
-    draw(scene.v);
-    textAreaEl.innerHTML = getText(scene.t);
+  // Handle special meta-nodes
+  if (nodeKey === '__tony_modal__') {
+    showTonyModal();
+    return;
+  }
 
-    // 检查隐藏物品
-    checkHiddenItem(scene);
+  const node = nodes[nodeKey];
+  if (!node) {
+    console.error('Missing node:', nodeKey);
+    return;
+  }
 
-    choicesEl.innerHTML = '';
+  // Shape
+  if (node.shape) setShape(node.shape, node.shapeColor || '#666');
 
-    if (state.i >= I18N.scenes.length - 1) {
-        // 结算页面
-        const ending = classify();
-        let inventoryText = '';
-        if (inventory.pottery || inventory.xun) {
-            inventoryText = `<br><i style="color:var(--clay)">`;
-            if (inventory.pottery) inventoryText += getText(I18N.hidden.pottery).split('.')[0] + '. ';
-            if (inventory.xun) inventoryText += getText(I18N.hidden.xun).split('.')[0] + '. ';
-            inventoryText += `</i><br>`;
-        }
+  // Text
+  const textArea = document.getElementById('text-area');
+  textArea.innerHTML = node.text[currentLang];
+  refreshEl('text-area', 300);
 
-        textAreaEl.innerHTML = `
-            <b>${getText(ending.title)}</b><br><br>
-            ${getText(ending.desc)}<br>
-            ${inventoryText}
-            ${I18N.scenes[state.i].c[0].t[currentLang]}:<br><br>
-        `;
+  // Choices
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  refreshEl('choices', 750);
 
-        const bronzeBtn = document.createElement('button');
-        bronzeBtn.className = 'btn';
-        bronzeBtn.textContent = getText(ending.next);
-        bronzeBtn.addEventListener('click', () => { playClickSound(); bronzeAge(getText(ending.next)); });
-        choicesEl.appendChild(bronzeBtn);
+  (node.choices || []).forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.innerHTML = choice.text[currentLang];
+    btn.addEventListener('click', () => {
+      if (choice.effect) choice.effect();
 
-        const restartBtn = document.createElement('button');
-        restartBtn.className = 'btn';
-        restartBtn.textContent = getText(I18N.restart);
-        restartBtn.addEventListener('click', () => { playClickSound(); setTimeout(location.reload.bind(location), 150); });
-        choicesEl.appendChild(restartBtn);
+      // Reveal hidden item
+      if (choice.hidden && !inventory[choice.hidden]) {
+        inventory[choice.hidden] = true;
+        showHiddenItem(choice.hidden);
+        updateInventoryUI();
+      }
 
-        if (oracleEl) {
-            setTimeout(() => {
-                if (oracleEl) {
-                    oracleEl.style.opacity = 1;
-                    oracleEl.textContent = getText(I18N.oracle);
-                }
-            }, 1000);
-        }
-        return;
-    }
-
-    scene.c.forEach(choice => {
-        const btn = document.createElement('button');
-        btn.className = 'btn';
-        btn.textContent = getText(choice.t);
-        btn.addEventListener('click', () => {
-            playClickSound();
-            state.u += choice.u || 0;
-            state.a += choice.a || 0;
-            state.e += choice.e || 0;
-            state.i++;
-            render();
-        });
-        choicesEl.appendChild(btn);
+      // Navigate
+      if (choice.next === '__ending__') {
+        showEnding(calcEnding(choice.endingKey));
+      } else {
+        renderNode(choice.next);
+      }
     });
+    choicesEl.appendChild(btn);
+  });
+
+  // Oracle
+  const oracleEl = document.getElementById('oracle');
+  if (node.oracle) {
+    oracleEl.textContent = I18N.oracleText[currentLang];
+    oracleEl.classList.add('visible');
+  } else {
+    oracleEl.classList.remove('visible');
+    oracleEl.textContent = '';
+  }
+
+  // Clear hidden item
+  const hiddenEl = document.getElementById('hidden-item');
+  hiddenEl.textContent = '';
+  hiddenEl.classList.remove('visible');
 }
 
-function bronzeAge(title) {
-    const textAreaEl = document.getElementById("text-area");
-    const choicesEl = document.getElementById("choices");
-    if (!textAreaEl || !choicesEl) return;
-
-    let inventoryNote = '';
-    if (inventory.xun) {
-        inventoryNote = `<br><br><i style="color:var(--clay)">The Xun you found echoes in the bronze chamber...</i>`;
-    }
-
-    textAreaEl.innerHTML = `
-        <b>${title}</b><br><br>
-        ${getText(I18N.bronzeIntro)}<br>
-        ${inventoryNote}
-        <br><i>(Next chapter can be expanded)</i>
-    `;
-
-    choicesEl.innerHTML = '';
-
-    const backBtn = document.createElement('button');
-    backBtn.className = 'btn';
-    backBtn.textContent = getText(I18N.back);
-    backBtn.addEventListener('click', () => { playClickSound(); render(); });
-    choicesEl.appendChild(backBtn);
+// ─────────────────────────────────────
+// HIDDEN ITEMS
+// ─────────────────────────────────────
+function showHiddenItem(key) {
+  const el = document.getElementById('hidden-item');
+  el.textContent = I18N.hidden[key][currentLang];
+  el.classList.add('visible');
+  playChime(1100);
+  setTimeout(() => playChime(1320), 300);
 }
 
-// -------------------
-// 初始化
-// -------------------
-document.addEventListener('DOMContentLoaded', () => {
-    const startScreen = document.getElementById('start-screen');
-    const langSwitch = document.getElementById('lang-switch');
-    const startHint = document.getElementById('start-hint');
+function updateInventoryUI() {
+  ['pottery', 'xun', 'shard'].forEach(key => {
+    const el = document.getElementById('inv-' + key);
+    if (inventory[key]) el.classList.add('found');
+  });
+}
 
-    if (startScreen && langSwitch && startHint) {
-        startScreen.addEventListener('click', () => {
-            startScreen.style.opacity = '0';
-            setTimeout(() => startScreen.remove(), 1000);
-            initAudio();
-            render();
-        });
+// ─────────────────────────────────────
+// TONY ZHOU MODAL
+// ─────────────────────────────────────
+function showTonyModal() {
+  const modal = document.getElementById('tony-modal');
+  document.getElementById('tony-header').textContent = I18N.tony.header[currentLang];
+  document.getElementById('tony-text').innerHTML = I18N.tony.text[currentLang];
+  document.getElementById('tony-input').placeholder = I18N.tony.placeholder[currentLang];
+  document.getElementById('tony-submit').textContent = I18N.tony.submit[currentLang];
+  document.getElementById('tony-skip').textContent = I18N.tony.skip[currentLang];
+  document.getElementById('tony-feedback').textContent = '';
+  document.getElementById('tony-feedback').className = 'tony-feedback';
+  document.getElementById('tony-input').value = '';
+  modal.classList.add('show');
+  setTimeout(() => document.getElementById('tony-input').focus(), 100);
+}
 
-        langSwitch.addEventListener('click', () => {
-            playClickSound();
-            toggleLang();
-        });
-        startHint.textContent = getText(I18N.startHint);
-    }
-});
+function hideTonyModal() {
+  document.getElementById('tony-modal').classList.remove('show');
+}
 
+function checkTonyAnswer() {
+  const input = document.getElementById('tony-input').value.trim().toLowerCase();
+  const correct = ['li', '礼', 'lǐ', 'li3', 'rite', 'ritual', 'propriety'];
+  const feedback = document.getElementById('tony-feedback');
+
+  if (correct.includes(input) || correct.some(c => input.includes(c))) {
+    feedback.textContent = I18N.tony.correct[currentLang];
+    feedback.className = 'tony-feedback correct';
+    tonyAnswered = true;
+    playChime(880);
+    setTimeout(() => playChime(1100), 350);
+    setTimeout(() => {
+      hideTonyModal();
+      state.i += 2;
+      renderNode('tonyRight');
+    }, 1800);
+  } else {
+    feedback.textContent = I18N.tony.wrong[currentLang];
+    feedback.className = 'tony-feedback wrong';
+    document.getElementById('tony-input').value = '';
+  }
+}
+
+// ─────────────────────────────────────
+// INIT GAME
+// ─────────────────────────────────────
+function initGame() {
+  // Language switch
+  document.getElementById('lang-switch').addEventListener('click', () => {
+    currentLang = currentLang === 'en' ? 'zh' : 'en';
+    document.getElementById('start-hint').textContent = I18N.startHint[currentLang];
+    if (window.currentNodeKey) renderNode(window.currentNodeKey);
+  });
+
+  // Start screen
+  document.getElementById('start-screen').addEventListener('click', () => {
+    const ss = document.getElementById('start-screen');
+    ss.style.opacity = '0';
+    setTimeout(() => { ss.style.display = 'none'; }, 1000);
+    initAudio();
+    renderNode('bronzeAge');
+  });
+
+  // Tony modal — submit
+  document.getElementById('tony-submit').addEventListener('click', checkTonyAnswer);
+  document.getElementById('tony-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkTonyAnswer();
+  });
+
+  // Tony modal — skip
+  document.getElementById('tony-skip').addEventListener('click', () => {
+    hideTonyModal();
+    renderNode('tonyWrong');
+  });
+
+  // Restart
+  document.getElementById('restart-btn').addEventListener('click', () => {
+    state = { u: 0, a: 0, e: 0, i: 0 };
+    inventory = { pottery: false, xun: false, shard: false };
+    tonyAnswered = false;
+    updateInventoryUI();
+    ['pottery','xun','shard'].forEach(k => {
+      document.getElementById('inv-'+k).classList.remove('found');
+    });
+
+    const endScreen = document.getElementById('ending-screen');
+    const mainGame = document.getElementById('main-game');
+    endScreen.classList.remove('show');
+    document.getElementById('inv-note').style.display = 'none';
+    mainGame.style.display = '';
+    mainGame.style.opacity = '1';
+    mainGame.style.transition = '';
+    renderNode('bronzeAge');
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initGame);
 </script>
 </body>
 </html>
